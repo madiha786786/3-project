@@ -47,75 +47,81 @@ That's it! Your Jenkins Freestyle project is now set up to build your Java web a
 
 
 
-Step 1: Install Nagios and Plugins
 
-First, make sure Nagios and the necessary plugins are installed on your server. You can do this by running:
+You want to monitor a project (i.e., a server or service) using Nagios, and display its status (is it up or down, healthy or not, etc.). Here's what you need to do step-by-step.
 
-sudo apt update
-sudo apt install nagios3 nagios-plugins-basic
+Step-by-Step Simple Guide to Monitor a Project Using Nagios
+Step 1: Access Nagios Web Interface
 
-Step 2: Access Nagios Web Interface
+Open your browser.
 
-Nagios provides a web interface to view your monitoring status.
+Go to: http://localhost:8084
 
-Open your web browser and go to:
-http://<your-server-ip>/nagios3
-
-Login with the default username/password:
+Log in using:
 
 Username: nagiosadmin
 
-Password: nagiosadmin (you can change this later)
+Password: nagios
 
-Step 3: Create a Configuration File for Your Project
+Step 2: Configure Nagios to Monitor Your Project
 
-You’ll need to define the host and services you want to monitor in a configuration file.
+You need to tell Nagios what to monitor. This is done by editing configuration files on the server where Nagios is running.
 
-Navigate to Nagios config directory:
+Add Your Project as a Host:
 
-cd /etc/nagios3/conf.d/
+Go to the Nagios configuration folder. For example: /usr/local/nagios/etc/objects/
 
+Create a file for your project. Let's say: myproject.cfg
 
-Create a new configuration file for your project (e.g., my_project.cfg):
+Add Host Configuration:
+Open myproject.cfg and add this code:
 
-sudo nano my_project.cfg
-
-
-Define the Host:
-Add the following in the file to define the server you're monitoring:
-
-define host {
-  use         linux-server
-  host_name   my_project
-  address     192.168.x.x   # Replace with your project's IP
+define host{
+    use             linux-server      ; Use template for Linux server
+    host_name       myproject         ; Name of your project (can be anything)
+    alias           My Project Monitor ; Optional: Description of your project
+    address         192.168.1.100    ; IP address of the server you want to monitor
 }
 
 
-Define the Service:
-Next, define a service (for example, monitoring HTTP):
+Replace 192.168.1.100 with your project's actual IP address.
 
-define service {
-  use                     generic-service
-  host_name               my_project
-  service_description     HTTP
-  check_command           check_http
+Add Service to Monitor (like HTTP, Ping, etc.):
+If you want to monitor if your project’s web server is up (HTTP), you can add this:
+
+define service{
+    use                     generic-service        ; Use default service template
+    host_name               myproject             ; Name of your project
+    service_description     HTTP                  ; Service name (e.g., "HTTP" for web server)
+    check_command           check_http            ; Command to check if HTTP is up
 }
 
-Step 4: Check Nagios Configuration
+Step 3: Restart Nagios to Apply the Changes
 
-Before restarting Nagios, it's important to check that there are no syntax errors in your configuration:
+Once you've added the host and service configurations, restart Nagios to apply those changes:
 
-sudo nagios3 -v /etc/nagios3/nagios.cfg
+# Restart Nagios
+sudo systemctl restart nagios
+
+Step 4: Check the Status on the Web Interface
+
+Go back to your browser.
+
+In Nagios Web Interface (http://localhost:8084), check the status of your project.
+
+You should see your project listed there.
+
+If HTTP is up, it will show as "OK."
+
+If it's down, it will show as "CRITICAL" or "DOWN."
+
+Step 5: Verify Status via Command Line
+
+If you want to verify manually, you can run this on your Nagios server:
+
+# Check if the HTTP service is up for your project
+sudo /usr/local/nagios/libexec/check_http -H 192.168.1.100
 
 
-If you see no errors, proceed to the next step.
+This will tell you if the HTTP service is up or down.
 
-Step 5: Restart Nagios
-
-Restart the Nagios service to apply the changes:
-
-sudo systemctl restart nagios3
-
-Step 6: Check Your Project in the Web Interface
-
-Go back to the Nagios web interface (http://<your-server-ip>/nagios3) and log in. You should now see your "my_project" host and its associated service (e.g., HTTP).
