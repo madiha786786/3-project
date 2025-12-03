@@ -47,188 +47,75 @@ That's it! Your Jenkins Freestyle project is now set up to build your Java web a
 
 
 
-Great! Since you already have Nagios installed, I'll guide you through the process of monitoring a project step-by-step. This will include configuring Nagios to monitor hosts and services (such as a server, website, or application), setting up notifications, and ensuring everything is running smoothly.
+Step 1: Install Nagios and Plugins
 
-Step 1: Configure Nagios to Monitor Hosts and Services
+First, make sure Nagios and the necessary plugins are installed on your server. You can do this by running:
 
-Navigate to Nagios Configuration Files
-The main configuration directory is typically /usr/local/nagios/etc/ or /etc/nagios/, depending on how Nagios was installed. You'll be working with a few important files, such as:
+sudo apt update
+sudo apt install nagios3 nagios-plugins-basic
 
-nagios.cfg: Main configuration file.
+Step 2: Access Nagios Web Interface
 
-objects/: Directory containing configuration for hosts, services, and other objects.
+Nagios provides a web interface to view your monitoring status.
 
-The primary files you'll interact with are:
+Open your web browser and go to:
+http://<your-server-ip>/nagios3
 
-objects/hosts.cfg – for defining the hosts (servers, services) to be monitored.
+Login with the default username/password:
 
-objects/services.cfg – for defining the services you want to monitor on these hosts.
+Username: nagiosadmin
 
-Define Hosts to Monitor
-In the hosts.cfg file, define the machines you want to monitor. For example:
+Password: nagiosadmin (you can change this later)
 
-define host{
-    use                     linux-server        ; Host template
-    host_name               myserver            ; Name of the server
-    alias                   My Web Server       ; Alias for the server
-    address                 192.168.1.100       ; IP address of the host
-    max_check_attempts      5                    ; How many times Nagios will retry monitoring
-    check_interval          5                    ; How often to check (in minutes)
-    retry_interval          1                    ; How often to retry if the host is down (in minutes)
-    check_command           check-host-alive     ; Command to use to check the host
-    contact_groups          admins               ; Group of people to notify
+Step 3: Create a Configuration File for Your Project
+
+You’ll need to define the host and services you want to monitor in a configuration file.
+
+Navigate to Nagios config directory:
+
+cd /etc/nagios3/conf.d/
+
+
+Create a new configuration file for your project (e.g., my_project.cfg):
+
+sudo nano my_project.cfg
+
+
+Define the Host:
+Add the following in the file to define the server you're monitoring:
+
+define host {
+  use         linux-server
+  host_name   my_project
+  address     192.168.x.x   # Replace with your project's IP
 }
 
 
-You can define multiple hosts in this file, one per server or service.
+Define the Service:
+Next, define a service (for example, monitoring HTTP):
 
-Define Services to Monitor
-In the services.cfg file, you can define the services you want to monitor on each host. For example:
-
-define service{
-    use                     generic-service         ; Service template
-    host_name               myserver               ; Which host to monitor
-    service_description     HTTP                    ; Name of the service
-    check_command           check_http              ; Command to check HTTP service
-    normal_check_interval   5                       ; How often to check this service
-    retry_check_interval    1                       ; How often to retry the service check
+define service {
+  use                     generic-service
+  host_name               my_project
+  service_description     HTTP
+  check_command           check_http
 }
 
-define service{
-    use                     generic-service         ; Service template
-    host_name               myserver               ; Which host to monitor
-    service_description     SSH                     ; Name of the service
-    check_command           check_ssh               ; Command to check SSH service
-    normal_check_interval   5                       ; How often to check this service
-    retry_check_interval    1                       ; How often to retry the service check
-}
+Step 4: Check Nagios Configuration
+
+Before restarting Nagios, it's important to check that there are no syntax errors in your configuration:
+
+sudo nagios3 -v /etc/nagios3/nagios.cfg
 
 
-Common service check commands include:
+If you see no errors, proceed to the next step.
 
-check_http for web servers.
+Step 5: Restart Nagios
 
-check_ssh for SSH.
+Restart the Nagios service to apply the changes:
 
-check_ping for basic host status.
+sudo systemctl restart nagios3
 
-Step 2: Apply Templates for Reusability
+Step 6: Check Your Project in the Web Interface
 
-Host Templates
-You can create reusable templates to avoid repetition in configuration. For example, create a template for Linux servers in the templates.cfg:
-
-define host{
-    name                    linux-server       ; Name of the template
-    check_command           check-host-alive   ; Command to check if the host is alive
-    max_check_attempts      3                   ; Retry limit
-    check_interval          5                   ; Check every 5 minutes
-    retry_interval          1                   ; Retry every minute if down
-    notification_interval   30                  ; Send notifications every 30 minutes
-}
-
-
-Then you can apply this template to individual hosts in the hosts.cfg file:
-
-define host{
-    use                     linux-server        ; Apply template
-    host_name               myserver
-    address                 192.168.1.100
-}
-
-
-Service Templates
-Similarly, create templates for services in templates.cfg:
-
-define service{
-    name                    generic-service        ; Template name
-    check_interval          5                       ; Check every 5 minutes
-    retry_interval          1                       ; Retry every minute
-    check_command           check_http              ; Check HTTP service
-}
-
-
-Then apply the service template:
-
-define service{
-    use                     generic-service         ; Apply template
-    host_name               myserver
-    service_description     HTTP
-}
-
-Step 3: Set Up Notifications
-
-Define Notification Settings
-In Nagios, you can configure who will be notified when a service or host goes down. Define notification settings in the contacts.cfg file. For example:
-
-define contact{
-    contact_name            admin
-    alias                   Admin User
-    email                   admin@example.com
-    service_notification_period 24x7  ; Notification period
-    host_notification_period    24x7
-}
-
-
-Associate Contact with Host/Service
-In your hosts.cfg or services.cfg, specify which contact group will be notified:
-
-define host{
-    use                     linux-server
-    host_name               myserver
-    address                 192.168.1.100
-    contact_groups          admins
-}
-
-Step 4: Verify Configurations and Restart Nagios
-
-Check Nagios Configuration
-After editing the configuration files, run the following command to check for errors:
-
-nagios -v /usr/local/nagios/etc/nagios.cfg
-
-
-If there are no errors, you'll see a message saying "Things look okay."
-
-Restart Nagios
-Restart Nagios to apply the new configuration:
-
-sudo systemctl restart nagios
-
-Step 5: Access Nagios Web Interface
-
-Log into the Web Interface
-Open your browser and navigate to the Nagios web interface (usually something like http://your-server-ip/nagios).
-
-View Status and Configure Alerts
-
-You can view the status of your monitored hosts and services.
-
-If any host or service is down, you will get an alert via email or SMS based on your configuration.
-
-You can also acknowledge or schedule downtime for services and hosts from the web interface.
-
-Step 6: Monitor Logs and Performance
-
-Check Nagios Logs
-Nagios logs errors and events in /usr/local/nagios/var/nagios.log or /var/log/nagios/nagios.log. You can view logs using:
-
-tail -f /usr/local/nagios/var/nagios.log
-
-
-Monitor the Performance of Hosts/Services
-If any monitored service is consistently failing or showing performance issues, you can configure additional checks like CPU load, disk space, or memory usage by adding custom Nagios plugins (e.g., check_load, check_disk, etc.).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Go back to the Nagios web interface (http://<your-server-ip>/nagios3) and log in. You should now see your "my_project" host and its associated service (e.g., HTTP).
