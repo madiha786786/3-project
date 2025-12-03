@@ -42,6 +42,23 @@ After the build completes, check the build status, console output, and archived 
 
 That's it! Your Jenkins Freestyle project is now set up to build your Java web application using Maven.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 You said:
 does it require any github push repo???
 ChatGPT said:
